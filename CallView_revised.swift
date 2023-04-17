@@ -17,11 +17,11 @@ public struct CallView: View {
     @State var cancelCall = false
     @State private var presentVideoCall = false
     private var timer: Timer?
-    private var soundId = SystemSoundID()
+    
     @State var videoCallView = VideoCallView()
     
 //    let callEngine = CallEngine()
-    var callCenter = CallCenter()
+    
     
     enum Operation {
         case on, off
@@ -68,12 +68,18 @@ public struct CallView: View {
         }.padding(.top,30)
             .onAppear {
                 videoCallView.videoChatDelegate = self //call the VideoCallView
-                callCenter.delegate = self
-                AgoraRtm.shared().inviterDelegate = self
+                //callCenter.delegate = self
+                //AgoraRtm.shared().inviterDelegate = self
             }
     }
     
-    mutating func startPlayRing() {
+
+}
+////////////////////////////////////////////////////////////////////////////////////////
+final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
+    //var callCenter = CallCenter()
+    private var soundId = SystemSoundID()
+    func startPlayRing() {
         let path = Bundle.main.path(forResource: "ring", ofType: "mp3")
         let url = URL.init(fileURLWithPath: path!)
         AudioServicesCreateSystemSoundID(url as CFURL, &soundId)
@@ -91,9 +97,7 @@ public struct CallView: View {
         AudioServicesDisposeSystemSoundID(soundId)
         AudioServicesRemoveSystemSoundCompletion(soundId)
     }
-}
-////////////////////////////////////////////////////////////////////////////////////////
-final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
+    
    // @StateObject
     func log(content: String) {
         print(content)
