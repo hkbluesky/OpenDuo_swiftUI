@@ -78,6 +78,8 @@ public struct CallView: View {
 ////////////////////////////////////////////////////////////////////////////////////////
 final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
     //var callCenter = CallCenter()
+    private lazy var callCenter = CallCenter(delegate: self)
+
     private var soundId = SystemSoundID()
     func startPlayRing() {
         let path = Bundle.main.path(forResource: "ring", ofType: "mp3")
@@ -207,7 +209,7 @@ extension CallView: AgoraRtmInvitertDelegate {
  */
 
 
-extension CallView: CallCenterDelegate {
+extension MyViewModel: CallCenterDelegate {
     func callCenter(_ callCenter: CallCenter, answerCall session: String) {
         print("callCenter answerCall")
 
