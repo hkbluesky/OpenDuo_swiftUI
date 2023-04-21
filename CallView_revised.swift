@@ -10,13 +10,15 @@ import AudioToolbox
 import AgoraRtmKit
 
 public struct CallView: View {
+    //@ObservedObject var myViewModel: MyViewModel
+    @StateObject var myViewModel = MyViewModel()
     
     var user: User
-    @State var prepareToVideoChat: (() -> ())?
-    @State var isLocalInSession = false
-    @State var cancelCall = false
-    @State private var presentVideoCall = false
-    private var timer: Timer?
+   
+    //@State var isLocalInSession = false
+    //@State var cancelCall = false
+    //@State private var presentVideoCall = false
+    //private var timer: Timer?
     
     @State var videoCallView = VideoCallView()
     
@@ -34,8 +36,8 @@ public struct CallView: View {
             }
             
             switch ringStatus {
-            case .on:  startPlayRing()
-            case .off: stopPlayRing()
+            case .on:  myViewModel.startPlayRing()
+            case .off: myViewModel.stopPlayRing()
             }
         }
     }
@@ -49,7 +51,7 @@ public struct CallView: View {
     
     public var body: some View {
         VStack {
-            NavigationLink(destination: videoCallView, isActive: $presentVideoCall) { }
+            NavigationLink(destination: videoCallView, isActive: $myViewModel.presentVideoCall) { }
             ProfileImage(frame: CGSize(width: 150, height: 150))
                 .padding(.leading, 10)
                 .padding(.top,60)
@@ -60,16 +62,16 @@ public struct CallView: View {
             Spacer()
             
             Spacer()
-            Button(action: toggleLocalSession) {
-                Image(isLocalInSession ? "end" : "call")
+            Button(action: myViewModel.toggleLocalSession) {
+                Image(myViewModel.isLocalInSession ? "end" : "call")
                     .resizable()
             }.frame(width: 70, height: 70)
             Spacer()
         }.padding(.top,30)
             .onAppear {
-                videoCallView.videoChatDelegate = self //call the VideoCallView
-                //callCenter.delegate = self
-                //AgoraRtm.shared().inviterDelegate = self
+                videoCallView.videoChatDelegate = myViewModel //call the VideoCallView
+                //callCenter.delegate = myViewModel
+                AgoraRtm.shared().inviterDelegate = myViewModel
             }
     }
     
@@ -77,6 +79,9 @@ public struct CallView: View {
 }
 ////////////////////////////////////////////////////////////////////////////////////////
 final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
+    @Published var isLocalInSession = false
+    @Published var presentVideoCall = false
+    
     //var callCenter = CallCenter()
     private lazy var callCenter = CallCenter(delegate: self)
 
@@ -153,64 +158,13 @@ final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
-extension CallView: AgoraRtmInvitertDelegate {
-    func log(content: String) {
-        print(content)
-    }
-    
-    func pushToVideoCall() {
-        print("accepted")
-        presentVideoCall = true
-    }
-    
-    func close(_ reason: HungupReason) {
-//        animationStatus = .off
-//        ringStatus = .off
-        self.callingVC(reason: reason)
-    }
-    func inviter(_ inviter: AgoraRtmCallKit, didReceivedIncoming invitation: AgoraRtmInvitation) {
-        callCenter.showIncomingCall(of: invitation)
-    }
-    func inviter(_ inviter: AgoraRtmCallKit, remoteDidCancelIncoming invitation: AgoraRtmInvitation) {
-        callCenter.endCall(of: invitation.caller)
-    }
-    func callingVC(reason: HungupReason) {
-        switch reason {
-        case .error:
-            print(reason.description)
-            break
-        case .remoteReject(let remote):
-            callCenter.endCall(of: remote)
-            toggleLocalSession()
-            print(reason.description + ": \(remote)")
-        case .normaly(let remote):
-            guard let inviter = AgoraRtm.shared().inviter else {
-                fatalError("rtm inviter nil")
-            }
-            
-            let errorHandle: ErrorCompletion = { (error: AGEError) in
-                print(error.localizedDescription)
-            }
-            
-            switch inviter.status {
-            case .outgoing:
-                callCenter.endCall(of: remote)
-                inviter.cancelLastOutgoingInvitation(fail: errorHandle)
-            default:
-                break
-            }
-        default:
-            break
-        }
-    }
-
-}
- */
-
 
 extension MyViewModel: CallCenterDelegate {
+    var prepareToVideoChat: (() -> ())?
+        
     func callCenter(_ callCenter: CallCenter, answerCall session: String) {
+        
+
         print("callCenter answerCall")
 
         guard let inviter = AgoraRtm.shared().inviter else {
@@ -303,7 +257,7 @@ extension MyViewModel: CallCenterDelegate {
     }
 }
 
-extension CallView: VideoChatDelegate {
+extension MyViewModel: VideoChatDelegate {
     func videoChat(didEndChatWith uid: String) {
         callCenter.endCall(of: uid)
     }
@@ -311,7 +265,7 @@ extension CallView: VideoChatDelegate {
 }
 
 
-fileprivate extension CallView {
+fileprivate extension MyViewModel {
     func toggleLocalSession() {
         isLocalInSession.toggle()
         if isLocalInSession {
