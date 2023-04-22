@@ -81,6 +81,7 @@ public struct CallView: View {
 final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
     @Published var isLocalInSession = false
     @Published var presentVideoCall = false
+    var prepareToVideoChat: (() -> Void)?
     
     //var callCenter = CallCenter()
     private lazy var callCenter = CallCenter(delegate: self)
@@ -160,7 +161,7 @@ final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
 
 
 extension MyViewModel: CallCenterDelegate {
-    var prepareToVideoChat: (() -> ())?
+    
         
     func callCenter(_ callCenter: CallCenter, answerCall session: String) {
         
