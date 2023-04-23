@@ -66,21 +66,21 @@ struct VideoCallView: View {
                 }.padding()
                 Spacer()
                 HStack {
-                    Button(action: toggleLocalVideo) {
+                    Button(action: myViewModel.toggleLocalVideo) {
                         Image(isLocalVideoMuted ? "videoMuteButton":"videoMuteButtonSelected")
                             .resizable()
                     }.frame(width: 55, height: 55)
-                    Button(action: toggleLocalAudio) {
+                    Button(action: myViewModel.toggleLocalAudio) {
                         Image(isLocalAudioMuted ? "mute" : "mic")
                             .resizable()
                     }.frame(width: 55, height: 55)
                  
-                    Button(action: switchCamera) {
+                    Button(action: myViewModel.switchCamera) {
                         Image("switch").resizable()
                     }.frame(width: 55, height: 55)
                     
                     NavigationLink(destination: CallSummaryView(), isActive: $callEnded) {
-                        Button(action: toggleLocalSession) {
+                        Button(action: myViewModel.toggleLocalSession) {
                             Image(isLocalInSession ? "end" : "call")
                                 .resizable()
                         }.frame(width: 70, height: 70)
@@ -90,10 +90,10 @@ struct VideoCallView: View {
             ActivityIndicatorView(isVisible: $showLoadingIndicator, type: .gradient([.white, Color("ThemeColor")]))
                 .frame(width: 50.0, height: 50.0)
         }.onAppear {
-            self.initializeAgoraEngine()
-            self.setupVideo()
-            self.setupLocalVideo()
-            self.toggleLocalSession()
+            myViewModel.initializeAgoraEngine()
+            myViewModel.setupVideo()
+            myViewModel.setupLocalVideo()
+            myViewModel.toggleLocalSession()
         }
         .hiddenTabBar()
         .navigationBarHidden(true)
@@ -102,8 +102,19 @@ struct VideoCallView: View {
 }
 
 
-final class ViewModel: ObservableObject {
+final class ViewModel: NSObject, ObservableObject {
     private let videoEngine = VideoEngine() //get the videoEngine from VideoEngine.swift
+    @Published var isLocalVideoMuted = true
+    @Published var isLocalInSession = false //moved from openduo: localVideo //checked
+    @Published var isLocalAudioMuted = false //moved from openduo: localVideoMutedIndicator
+    @Published var isRemoteInSession = false
+    @Published var isRemoteVideoOff = true //moved from openduo: remoteVideoMutedIndicator ////isRemoteVideoMuted in the example project
+    @Published var showLoadingIndicator = false
+    //@State var micButton = false    //appeared in Openduo
+    //@State var cameraButton = false //appeared in Openduo
+    @Published var callEnded = false
+    @Published var token: String?
+
     
     private var rtcEngine: AgoraRtcEngineKit { //equal to agoraKit in OpenDuo
         get {
@@ -111,7 +122,6 @@ final class ViewModel: ObservableObject {
             //return AgoraRtcEngineKit.sharedEngine(withAppId: KeyManager.AppId, delegate: self)
         }
     }
-    
 }
 
 
@@ -126,6 +136,8 @@ extension ViewModel { //used in VideoEngine
 
 
  extension ViewModel {
+    
+     
     func initializeAgoraEngine() {
         //videoEngine.contentView = self
     }
@@ -156,10 +168,10 @@ extension ViewModel { //used in VideoEngine
         ApiRequest().makeRequestRTC { status in
             if status == true{
                                            
-                rtcEngine.setDefaultAudioRouteToSpeakerphone(true)
-                rtcEngine.setChannelProfile(.liveBroadcasting);
-                rtcEngine.setClientRole(.broadcaster);
-                rtcEngine.joinChannel(byToken: Token.shared().rtcToken, channelId: KeyManager.currentChannel, info: nil, uid: UInt(KeyManager.UserUID)!, joinSuccess: nil)
+                self.rtcEngine.setDefaultAudioRouteToSpeakerphone(true)
+                self.rtcEngine.setChannelProfile(.liveBroadcasting);
+                self.rtcEngine.setClientRole(.broadcaster);
+                self.rtcEngine.joinChannel(byToken: Token.shared().rtcToken, channelId: KeyManager.currentChannel, info: nil, uid: UInt(KeyManager.UserUID)!, joinSuccess: nil)
 
                 
                 //rtcEngine.setAudioSessionOperationRestriction(.all)
@@ -291,12 +303,12 @@ extension ViewModel: AgoraRtcEngineDelegate {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didJoinChannel channel: String, withUid uid: UInt, elapsed: Int) {
-        contentView?.log(content: "did join channel")
+        log(content: "did join channel")
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didLeaveChannelWith stats: AgoraChannelStats) {
-        contentView?.log(content: "did leave channel")
-        contentView?.isLocalAudioMuted = false
+        log(content: "did leave channel")
+        self.isLocalAudioMuted = false
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didJoinedOfUid uid: UInt, elapsed: Int) {
@@ -309,36 +321,36 @@ extension ViewModel: AgoraRtcEngineDelegate {
         videoCanvas.uid = uid
         agoraEngine.setupRemoteVideo(videoCanvas)
 
-        contentView?.isRemoteVideoOff = false
-        contentView?.isRemoteInSession = true
+        self.isRemoteVideoOff = false
+        self.isRemoteInSession = true
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didOfflineOfUid uid: UInt, reason: AgoraUserOfflineReason) {
     
          //isRemoteVideoRender = false
-        contentView?.isRemoteVideoOff = true
+        self.isRemoteVideoOff = true
         // guard let remoteUid = remoteUid else {
         //    fatalError("remoteUid nil")
          //}
          //print("didOfflineOfUid: \(uid)")
          //if uid == remoteUid {
-        contentView?.leaveChannel()
+        self.leaveChannel()
          //}
         print("hell world")
-        contentView?.isRemoteInSession = false
+        self.isRemoteInSession = false
     }
 
     func rtcEngine(_ engine: AgoraRtcEngineKit, didVideoMuted muted:Bool, byUid:UInt) {
         //isRemoteVideoRender = !muted
-        contentView?.isRemoteVideoOff = muted
+        self.isRemoteVideoOff = muted
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didOccurWarning warningCode: AgoraWarningCode) {
-        contentView?.log(content: "did occur warning: \(warningCode.rawValue)")
+        log(content: "did occur warning: \(warningCode.rawValue)")
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didOccurError errorCode: AgoraErrorCode) {
-        contentView?.log(content: "did occur error: \(errorCode.rawValue)")
+        log(content: "did occur error: \(errorCode.rawValue)")
     }
     
     //extra from the original VideoEngine
