@@ -35,8 +35,8 @@ struct VideoCallView: View {
     
     var videoChatDelegate: VideoChatDelegate?
 
-    let localCanvas = VideoCanvas()
-    let remoteCanvas = VideoCanvas()
+    //@StateObject var localCanvas
+    //@StateObject var remoteCanvas = VideoCanvas()
     
     
 
@@ -48,7 +48,7 @@ struct VideoCallView: View {
                 backColor: Color("remoteBackColor"),
                 backImage: Image("videoMutedIndicator"),
                 hideCanvas: isRemoteVideoOff || !isRemoteInSession || !isLocalInSession,
-                canvas: remoteCanvas
+                canvas: myViewModel.remoteCanvas
             ).edgesIgnoringSafeArea(.all)
             VStack {
                 HStack {
@@ -61,7 +61,7 @@ struct VideoCallView: View {
                         hideCanvas: isLocalVideoMuted, //different from the example code
 
                         //hideCanvas: false, //different from the example code
-                        canvas: localCanvas
+                        canvas: myViewModel.localCanvas
                     ).frame(width: 84, height: 112)
                 }.padding()
                 Spacer()
@@ -114,6 +114,10 @@ final class ViewModel: NSObject, ObservableObject {
     //@State var cameraButton = false //appeared in Openduo
     @Published var callEnded = false
     @Published var token: String?
+    
+    @Published var localCanvas = VideoCanvas()
+    @Published var remoteCanvas = VideoCanvas()
+
 
     private var agoraEngine: AgoraRtcEngineKit!
    // private var rtcEngine: AgoraRtcEngineKit { //equal to agoraKit in OpenDuo
@@ -333,7 +337,7 @@ extension ViewModel: AgoraRtcEngineDelegate {
         // tutorial. Here we check if there exists a surface
         // view tagged as this uid.
         let videoCanvas = AgoraRtcVideoCanvas()
-        videoCanvas.view = contentView?.remoteCanvas.rendererView
+        videoCanvas.view = remoteCanvas.rendererView
         videoCanvas.renderMode = .hidden
         videoCanvas.uid = uid
         agoraEngine.setupRemoteVideo(videoCanvas)
