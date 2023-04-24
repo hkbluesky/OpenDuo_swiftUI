@@ -103,7 +103,7 @@ struct VideoCallView: View {
 
 
 final class ViewModel: NSObject, ObservableObject {
-    private let videoEngine = VideoEngine() //get the videoEngine from VideoEngine.swift
+    //private let videoEngine = VideoEngine() //get the videoEngine from VideoEngine.swift
     @Published var isLocalVideoMuted = true
     @Published var isLocalInSession = false //moved from openduo: localVideo //checked
     @Published var isLocalAudioMuted = false //moved from openduo: localVideoMutedIndicator
@@ -115,13 +115,13 @@ final class ViewModel: NSObject, ObservableObject {
     @Published var callEnded = false
     @Published var token: String?
 
-    
-    private var rtcEngine: AgoraRtcEngineKit { //equal to agoraKit in OpenDuo
-        get {
-            return videoEngine.agoraEngine
+    private var agoraEngine: AgoraRtcEngineKit!
+   // private var rtcEngine: AgoraRtcEngineKit { //equal to agoraKit in OpenDuo
+   //     get {
+   //         return videoEngine.agoraEngine
             //return AgoraRtcEngineKit.sharedEngine(withAppId: KeyManager.AppId, delegate: self)
-        }
-    }
+   //     }
+    //}
 }
 
 
@@ -136,15 +136,31 @@ extension ViewModel { //used in VideoEngine
 
 
  extension ViewModel {
-    
+     
      
     func initializeAgoraEngine() {
-        //videoEngine.contentView = self
+        let config = AgoraRtcEngineConfig()
+        
+        let logConfig = AgoraLogConfig()
+        // Set the log filter to ERROR
+        
+        logConfig.level = AgoraLogLevel.info
+        // Set the log file path
+        let formatter = DateFormatter()
+        formatter.dateFormat = "ddMMyyyyHHmm"
+        
+        logConfig.filePath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first! + "/logs/\(formatter.string(from: Date())).log"
+        
+        config.appId = KeyManager.AppId
+        //config.areaCode = GlobalSettings.shared.area.rawValue
+        config.logConfig = logConfig
+        agoraEngine = AgoraRtcEngineKit.sharedEngine(with: config, delegate: self)
+        //return agoraEngine;
     }
     
     func setupVideo() {
-        rtcEngine.enableVideo()
-        rtcEngine.setVideoEncoderConfiguration(
+        agoraEngine.enableVideo()
+        agoraEngine.setVideoEncoderConfiguration(
             AgoraVideoEncoderConfiguration(
                 size: AgoraVideoDimension640x360,
                 frameRate: .fps15,
@@ -160,7 +176,7 @@ extension ViewModel { //used in VideoEngine
         videoCanvas.uid = 0
         videoCanvas.view = localCanvas.rendererView
         videoCanvas.renderMode = .hidden
-        rtcEngine.setupLocalVideo(videoCanvas)
+        agoraEngine.setupLocalVideo(videoCanvas)
     }
     
     func joinChannel() {
@@ -168,10 +184,10 @@ extension ViewModel { //used in VideoEngine
         ApiRequest().makeRequestRTC { status in
             if status == true{
                                            
-                self.rtcEngine.setDefaultAudioRouteToSpeakerphone(true)
-                self.rtcEngine.setChannelProfile(.liveBroadcasting);
-                self.rtcEngine.setClientRole(.broadcaster);
-                self.rtcEngine.joinChannel(byToken: Token.shared().rtcToken, channelId: KeyManager.currentChannel, info: nil, uid: UInt(KeyManager.UserUID)!, joinSuccess: nil)
+                self.agoraEngine.setDefaultAudioRouteToSpeakerphone(true)
+                self.agoraEngine.setChannelProfile(.liveBroadcasting);
+                self.agoraEngine.setClientRole(.broadcaster);
+                self.agoraEngine.joinChannel(byToken: Token.shared().rtcToken, channelId: KeyManager.currentChannel, info: nil, uid: UInt(KeyManager.UserUID)!, joinSuccess: nil)
 
                 
                 //rtcEngine.setAudioSessionOperationRestriction(.all)
@@ -193,7 +209,7 @@ extension ViewModel { //used in VideoEngine
     }
     
     func leaveChannel() {
-        rtcEngine.leaveChannel(nil)
+        self.agoraEngine.leaveChannel(nil)
         
         /*
         guard let KeyManager.HostUserUID = remoteUid else {
@@ -233,23 +249,23 @@ extension ViewModel {
     }
     
     func switchCamera() { //equal to didClickSwitchCameraButton
-        rtcEngine.switchCamera()
+        agoraEngine.switchCamera()
     }
     
     func toggleLocalAudio() { //equal to didClickMuteButton
         isLocalAudioMuted.toggle()
-        rtcEngine.muteLocalAudioStream(isLocalAudioMuted)
+        agoraEngine.muteLocalAudioStream(isLocalAudioMuted)
     }
     
     func toggleLocalVideo() { //equal to didClickMuteButton
         isLocalVideoMuted.toggle()
-        rtcEngine.muteLocalVideoStream(isLocalVideoMuted)
+        agoraEngine.muteLocalVideoStream(isLocalVideoMuted)
     }
 }
 
 
 
-
+/*
 class VideoEngine: NSObject { //Subclassing, NSObject is a parent class
     // init AgoraRtcEngineKit
     let config = AgoraRtcEngineConfig()
@@ -276,6 +292,7 @@ class VideoEngine: NSObject { //Subclassing, NSObject is a parent class
     
     var contentView: VideoCallView?
 }
+ */
 
 extension ViewModel: AgoraRtcEngineDelegate {
     
