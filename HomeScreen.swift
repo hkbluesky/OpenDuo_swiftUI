@@ -103,19 +103,12 @@ struct HomeScreen: View {
         }
     }
 }
-
-
-extension HomeScreen {
+//////////////////
+///
+final class MyHomeViewModel: ObservableObject, AgoraRtmInvitertDelegate {
+    //@Published var isLocalInSession = false
+    //@Published var presentVideoCall = false
     
-    func makeAgoraRequest(){
-        if !self.firstAppear && Token.shared().rtmToken != ""  { return }
-        firstAppear = false
-        KeyManager.UserUID = "\(User.current?.uid ?? 0)"
-        ApiRequest().makeRTMRequest()
-    }
-}
-
-extension HomeScreen: AgoraRtmInvitertDelegate {
     func log(content: String) {
         print(content)
     }
@@ -164,8 +157,20 @@ extension HomeScreen: AgoraRtmInvitertDelegate {
             break
         }
     }
-
 }
+
+extension HomeScreen {
+    
+    func makeAgoraRequest(){
+        if !self.firstAppear && Token.shared().rtmToken != ""  { return }
+        firstAppear = false
+        KeyManager.UserUID = "\(User.current?.uid ?? 0)"
+        ApiRequest().makeRTMRequest()
+    }
+}
+
+//extension HomeScreen: AgoraRtmInvitertDelegate {
+//}
 
 struct HomeScreen_Previews: PreviewProvider {
     static var previews: some View {
@@ -173,7 +178,7 @@ struct HomeScreen_Previews: PreviewProvider {
     }
 }
 
-extension HomeScreen: CallCenterDelegate {
+extension MyHomeViewModel: CallCenterDelegate {
     func callCenter(_ callCenter: CallCenter, answerCall session: String) {
         print("callCenter answerCall")
 
@@ -268,7 +273,7 @@ extension HomeScreen: CallCenterDelegate {
     }
 }
 
-extension HomeScreen: VideoChatDelegate {
+extension MyHomeViewModel: VideoChatDelegate {
     func videoChat(didEndChatWith uid: String) {
         callCenter.endCall(of: uid)
     }
