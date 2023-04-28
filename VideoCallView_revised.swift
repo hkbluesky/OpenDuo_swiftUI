@@ -17,7 +17,7 @@ protocol VideoChatDelegate: AnyObject {
 }
 
 struct VideoCallView: View {
-    @StateObject var myViewModel = ViewModel()
+    @StateObject var videoCallViewModel = VideoCallViewModel()
     @State var isLocalInSession = false //moved from openduo: localVideo //checked
     @State var isLocalAudioMuted = false //moved from openduo: localVideoMutedIndicator
     @State var isLocalVideoMuted = false //moved from openduo: localVideoMutedIndicator
@@ -33,7 +33,7 @@ struct VideoCallView: View {
 
 
     
-    var videoChatDelegate: VideoChatDelegate?
+   
 
     //@StateObject var localCanvas
     //@StateObject var remoteCanvas = VideoCanvas()
@@ -48,7 +48,7 @@ struct VideoCallView: View {
                 backColor: Color("remoteBackColor"),
                 backImage: Image("videoMutedIndicator"),
                 hideCanvas: isRemoteVideoOff || !isRemoteInSession || !isLocalInSession,
-                canvas: myViewModel.remoteCanvas
+                canvas: VideoCanvas(rendererView: videoCallViewModel.remoteCanvasView)//videoCallViewModel.remoteCanvas
             ).edgesIgnoringSafeArea(.all)
             VStack {
                 HStack {
@@ -61,26 +61,26 @@ struct VideoCallView: View {
                         hideCanvas: isLocalVideoMuted, //different from the example code
 
                         //hideCanvas: false, //different from the example code
-                        canvas: myViewModel.localCanvas
+                        canvas: VideoCanvas(rendererView: videoCallViewModel.localCanvasView)
                     ).frame(width: 84, height: 112)
                 }.padding()
                 Spacer()
                 HStack {
-                    Button(action: myViewModel.toggleLocalVideo) {
+                    Button(action: videoCallViewModel.toggleLocalVideo) {
                         Image(isLocalVideoMuted ? "videoMuteButton":"videoMuteButtonSelected")
                             .resizable()
                     }.frame(width: 55, height: 55)
-                    Button(action: myViewModel.toggleLocalAudio) {
+                    Button(action: videoCallViewModel.toggleLocalAudio) {
                         Image(isLocalAudioMuted ? "mute" : "mic")
                             .resizable()
                     }.frame(width: 55, height: 55)
                  
-                    Button(action: myViewModel.switchCamera) {
+                    Button(action: videoCallViewModel.switchCamera) {
                         Image("switch").resizable()
                     }.frame(width: 55, height: 55)
                     
                     NavigationLink(destination: CallSummaryView(), isActive: $callEnded) {
-                        Button(action: myViewModel.toggleLocalSession) {
+                        Button(action: videoCallViewModel.toggleLocalSession) {
                             Image(isLocalInSession ? "end" : "call")
                                 .resizable()
                         }.frame(width: 70, height: 70)
@@ -90,10 +90,10 @@ struct VideoCallView: View {
             ActivityIndicatorView(isVisible: $showLoadingIndicator, type: .gradient([.white, Color("ThemeColor")]))
                 .frame(width: 50.0, height: 50.0)
         }.onAppear {
-            myViewModel.initializeAgoraEngine()
-            myViewModel.setupVideo()
-            myViewModel.setupLocalVideo()
-            myViewModel.toggleLocalSession()
+            videoCallViewModel.initializeAgoraEngine()
+            videoCallViewModel.setupVideo()
+            videoCallViewModel.setupLocalVideo()
+            videoCallViewModel.toggleLocalSession()
         }
         .hiddenTabBar()
         .navigationBarHidden(true)
@@ -102,7 +102,7 @@ struct VideoCallView: View {
 }
 
 
-final class ViewModel: NSObject, ObservableObject {
+final class VideoCallViewModel: NSObject, ObservableObject {
     //private let videoEngine = VideoEngine() //get the videoEngine from VideoEngine.swift
     @Published var isLocalVideoMuted = true
     @Published var isLocalInSession = false //moved from openduo: localVideo //checked
@@ -115,10 +115,11 @@ final class ViewModel: NSObject, ObservableObject {
     @Published var callEnded = false
     @Published var token: String?
     
-    @Published var localCanvas = VideoCanvas()
-    @Published var remoteCanvas = VideoCanvas()
+    let localCanvasView = UIView()
+    let remoteCanvasView = UIView()
 
-
+    var videoChatDelegate: VideoChatDelegate?
+    
     private var agoraEngine: AgoraRtcEngineKit!
    // private var rtcEngine: AgoraRtcEngineKit { //equal to agoraKit in OpenDuo
    //     get {
@@ -132,15 +133,15 @@ final class ViewModel: NSObject, ObservableObject {
 
 //Above code is about the view
 
-extension ViewModel { //used in VideoEngine
+extension VideoCallViewModel { //used in VideoEngine
     func log(content: String) {
         print(content)
     }
 }
 
 
- extension ViewModel {
-     
+ extension VideoCallViewModel {
+     //weak var delegate: VideoChatVCDelegate?
      
     func initializeAgoraEngine() {
         let config = AgoraRtcEngineConfig()
@@ -178,7 +179,7 @@ extension ViewModel { //used in VideoEngine
     func setupLocalVideo() {
         let videoCanvas = AgoraRtcVideoCanvas()
         videoCanvas.uid = 0
-        videoCanvas.view = localCanvas.rendererView
+        videoCanvas.view = localCanvasView
         videoCanvas.renderMode = .hidden
         agoraEngine.setupLocalVideo(videoCanvas)
     }
@@ -222,9 +223,12 @@ extension ViewModel { //used in VideoEngine
          */
         
         //delegate?.videoChat(self, didEndChatWith: remoteUid)
-        videoChatDelegate?.videoChat(didEndChatWith: KeyManager.HostUserUID)
         
-        //videoChatDelegate?.videoChat(didEndChatWith: KeyManager.HostUserUID)
+        //let myViewModelObj = CallViewModel()
+        //myViewModelObj.videoChat(didEndChatWith: KeyManager.HostUserUID)
+        //delegate?.videoChat(didEndChatWith: KeyManager.HostUserUID)
+        
+        videoChatDelegate?.videoChat(didEndChatWith: KeyManager.HostUserUID)
         
         callEnded = true
         isLocalInSession = false
@@ -237,7 +241,7 @@ extension ViewModel { //used in VideoEngine
     }
 }
 
-extension ViewModel {
+extension VideoCallViewModel {
 
     func toggleLocalSession() { //equal to pressing hangout button
         isLocalInSession.toggle()
@@ -298,7 +302,7 @@ class VideoEngine: NSObject { //Subclassing, NSObject is a parent class
 }
  */
 
-extension ViewModel: AgoraRtcEngineDelegate {
+extension VideoCallViewModel: AgoraRtcEngineDelegate {
     
     /*
      func rtcEngine(_ engine: AgoraRtcEngineKit, firstRemoteVideoDecodedOfUid uid: UInt, size: CGSize, elapsed: Int) {
@@ -337,7 +341,7 @@ extension ViewModel: AgoraRtcEngineDelegate {
         // tutorial. Here we check if there exists a surface
         // view tagged as this uid.
         let videoCanvas = AgoraRtcVideoCanvas()
-        videoCanvas.view = remoteCanvas.rendererView
+        videoCanvas.view = remoteCanvasView
         videoCanvas.renderMode = .hidden
         videoCanvas.uid = uid
         agoraEngine.setupRemoteVideo(videoCanvas)
