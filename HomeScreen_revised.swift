@@ -11,18 +11,19 @@ import AgoraRtmKit
 import NavigationViewKit
 
 struct HomeScreen: View {
-    var callCenter = CallCenter()
+    
     @State var videoCallView = VideoCallView()
-    @State var prepareToVideoChat: (() -> ())?
+    //@State var prepareToVideoChat: (() -> ())?
     @State private var presentVideoCall = false
     @State var index = 0
-    @State var uiTabarController: UITabBarController?
+    //@State var uiTabarController: UITabBarController?
     @State var showLoadingIndicator = false
     var images = ["sample3","sample2","sample1"]
     @State private var selectedLanguage = LocalizationService.shared.language == .english_us ? 0 : 1
     private var language = LocalizationService.shared.language
     @EnvironmentObject var settings: UserSettings
     @State var firstAppear: Bool = true
+    @StateObject var myHomeViewModel = MyHomeViewModel()
 
     var body: some View {
         NavigationView {
@@ -84,9 +85,9 @@ struct HomeScreen: View {
             }
         }.onAppear {
             print(User.current?.username ?? "")
-            callCenter.delegate = self
-            videoCallView.videoChatDelegate = self
-            AgoraRtm.shared().inviterDelegate = self
+            //callCenter.delegate = self
+            //videoCallView.videoChatDelegate = self
+            //AgoraRtm.shared().inviterDelegate = 
             KeyManager.HostUserUID = ""
             if User.current?.uid == nil {
                 let api = ApiRequest()
@@ -107,8 +108,11 @@ struct HomeScreen: View {
 ///
 final class MyHomeViewModel: ObservableObject, AgoraRtmInvitertDelegate {
     //@Published var isLocalInSession = false
-    //@Published var presentVideoCall = false
-    
+    @Published var presentVideoCall = false
+    //var callCenter = CallCenter()
+    private lazy var callCenter = CallCenter(delegate: self)
+    var prepareToVideoChat: (() -> ())?
+
     func log(content: String) {
         print(content)
     }
