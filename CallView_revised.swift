@@ -10,8 +10,9 @@ import AudioToolbox
 import AgoraRtmKit
 
 public struct CallView: View {
-    //@ObservedObject var myViewModel: MyViewModel
-    @StateObject var myViewModel = MyViewModel()
+    //@ObservedObject var callViewModel: CallViewModel
+    @StateObject var callViewModel = CallViewModel()
+    @StateObject var videoCallViewModel = VideoCallViewModel()
     
     var user: User
    
@@ -20,7 +21,7 @@ public struct CallView: View {
     //@State private var presentVideoCall = false
     //private var timer: Timer?
     
-    @State var videoCallView = VideoCallView()
+    //@State var videoCallView = VideoCallView()
     
 //    let callEngine = CallEngine()
     
@@ -36,8 +37,8 @@ public struct CallView: View {
             }
             
             switch ringStatus {
-            case .on:  myViewModel.startPlayRing()
-            case .off: myViewModel.stopPlayRing()
+            case .on:  callViewModel.startPlayRing()
+            case .off: callViewModel.stopPlayRing()
             }
         }
     }
@@ -45,13 +46,14 @@ public struct CallView: View {
     
     init(user: User) {
         self.user = user
+        videoCallViewModel.videoChatDelegate = callViewModel
         KeyManager.HostUserUID = "\(user.uid ?? 0)"
     }
     
     
     public var body: some View {
         VStack {
-            NavigationLink(destination: videoCallView, isActive: $myViewModel.presentVideoCall) { }
+            NavigationLink(destination: VideoCallView(videoCallViewModel: videoCallViewModel), isActive: $callViewModel.presentVideoCall) { }
             ProfileImage(frame: CGSize(width: 150, height: 150))
                 .padding(.leading, 10)
                 .padding(.top,60)
@@ -62,23 +64,22 @@ public struct CallView: View {
             Spacer()
             
             Spacer()
-            Button(action: myViewModel.toggleLocalSession) {
-                Image(myViewModel.isLocalInSession ? "end" : "call")
+            Button(action: callViewModel.toggleLocalSession) {
+                Image(callViewModel.isLocalInSession ? "end" : "call")
                     .resizable()
             }.frame(width: 70, height: 70)
             Spacer()
         }.padding(.top,30)
             .onAppear {
-                videoCallView.videoChatDelegate = myViewModel //call the VideoCallView
                 //callCenter.delegate = myViewModel
-                AgoraRtm.shared().inviterDelegate = myViewModel
+                AgoraRtm.shared().inviterDelegate = callViewModel
             }
     }
     
 
 }
 ////////////////////////////////////////////////////////////////////////////////////////
-final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
+final class CallViewModel: ObservableObject, AgoraRtmInvitertDelegate {
     @Published var isLocalInSession = false
     @Published var presentVideoCall = false
     var prepareToVideoChat: (() -> Void)?
@@ -160,7 +161,7 @@ final class MyViewModel: ObservableObject, AgoraRtmInvitertDelegate {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-extension MyViewModel: CallCenterDelegate {
+extension CallViewModel: CallCenterDelegate {
     
         
     func callCenter(_ callCenter: CallCenter, answerCall session: String) {
@@ -258,7 +259,7 @@ extension MyViewModel: CallCenterDelegate {
     }
 }
 
-extension MyViewModel: VideoChatDelegate {
+extension CallViewModel: VideoChatDelegate {
     func videoChat(didEndChatWith uid: String) {
         callCenter.endCall(of: uid)
     }
@@ -266,7 +267,7 @@ extension MyViewModel: VideoChatDelegate {
 }
 
 
-fileprivate extension MyViewModel {
+fileprivate extension CallViewModel {
     func toggleLocalSession() {
         isLocalInSession.toggle()
         if isLocalInSession {
