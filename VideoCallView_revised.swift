@@ -156,11 +156,14 @@ extension VideoCallViewModel { //used in VideoEngine
         
         logConfig.filePath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first! + "/logs/\(formatter.string(from: Date())).log"
         
+        print(logConfig.filePath)
+        
         config.appId = KeyManager.AppId
         //config.areaCode = GlobalSettings.shared.area.rawValue
         config.logConfig = logConfig
         agoraEngine = AgoraRtcEngineKit.sharedEngine(with: config, delegate: self)
         //return agoraEngine;
+        print("initializeAgoraEngine completed")
     }
     
     func setupVideo() {
@@ -173,6 +176,7 @@ extension VideoCallViewModel { //used in VideoEngine
                 orientationMode: .adaptative,
                 mirrorMode: AgoraVideoMirrorMode.disabled
         ))
+        print("setup remote Video completed")
     }
     
     
@@ -182,6 +186,7 @@ extension VideoCallViewModel { //used in VideoEngine
         videoCanvas.view = localCanvasView
         videoCanvas.renderMode = .hidden
         agoraEngine.setupLocalVideo(videoCanvas)
+        print("setup local Video completed")
     }
     
     func joinChannel() {
@@ -202,6 +207,11 @@ extension VideoCallViewModel { //used in VideoEngine
                 //videoChatDelegate?.videoChat(didEndChatWith: KeyManager.HostUserUID)
                 
                 self.isLocalVideoMuted = false
+                //self.isLocalInSession = true
+                //self.isRemoteInSession = true
+                //self.isRemoteVideoOff = false
+                
+            
                 //isStartCalling = true
                 //UIApplication.shared.isIdleTimerDisabled = true
                 //self.contentView?.log(content: "did join channel")
@@ -328,11 +338,11 @@ extension VideoCallViewModel: AgoraRtcEngineDelegate {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didJoinChannel channel: String, withUid uid: UInt, elapsed: Int) {
-        log(content: "did join channel")
+        print("did join channel")
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didLeaveChannelWith stats: AgoraChannelStats) {
-        log(content: "did leave channel")
+        print("did leave channel")
         self.isLocalAudioMuted = false
     }
     
@@ -371,11 +381,11 @@ extension VideoCallViewModel: AgoraRtcEngineDelegate {
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didOccurWarning warningCode: AgoraWarningCode) {
-        log(content: "did occur warning: \(warningCode.rawValue)")
+        print("did occur warning: \(warningCode.rawValue)")
     }
     
     func rtcEngine(_ engine: AgoraRtcEngineKit, didOccurError errorCode: AgoraErrorCode) {
-        log(content: "did occur error: \(errorCode.rawValue)")
+        print("did occur error: \(errorCode.rawValue)")
     }
     
     //extra from the original VideoEngine
